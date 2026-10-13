@@ -1,19 +1,25 @@
-# Project Atlas
+# Project Mind Map
 
 An immersive, static multi-project workspace with Three.js 0.180.0 and GSAP 3.13.0. This update adds a connected universe overview, portals between projects, and the Interreg olfactory workshop project. The interface uses pale glass panels, glossy 3D forms, lime navigation accents, moving connection pulses, and animated camera navigation.
 
 ## Run it
 
-Extract this folder. In a terminal in the extracted folder:
+Extract the newest folder. Stop your previous Python server with Ctrl+C in its terminal.
 
-    python -m http.server 8000
+On Windows, double-click Start-Project-Mind-Map.bat, or run:
 
-On Windows, use `py -m http.server 8000` if needed. Visit http://localhost:8000. JavaScript modules require HTTP, so do not double-click index.html. No backend, API key, npm installation, or build step is needed for the web app.
+    py serve.py
+
+On Linux/macOS, run `python3 serve.py`. Visit http://localhost:8000/. The launcher always serves the folder containing serve.py and prints its path and build number. It disables browser caching for all local app files. No backend, API key, npm installation, or build step is needed for the web app.
+
+If port 8000 is busy, stop the old server; this preserves the address used for your browser notes. Alternatively, `py serve.py --port 8001` uses a separate address. Export/import your workspace when moving to another port or host.
+
+Do not double-click index.html. JavaScript modules require HTTP.
 
 ## Host on GitHub Pages
 
 1. Create a repository. A public repository works with GitHub Free.
-2. Upload the contents of this folder to its root, including index.html, app.js, map.js, data.js, style.css, film.html, and .nojekyll.
+2. Upload the contents of this folder to its root, including index.html, app.js, map.js, data.js, style.css, film.html, version.json, the entire vendor/ folder, and .nojekyll. Upload all files from this release together to avoid mixing versions.
 3. In Settings → Pages, choose Deploy from a branch → main → /(root) → Save.
 4. Open the Pages URL shown by GitHub. Relative paths support repository subpaths.
 
@@ -58,7 +64,7 @@ Browser-local edits DO NOT sync across devices or write back to GitHub. Export r
 
 Drag to orbit and scroll/pinch to zoom. Recenter restores the complete map. Expand provides a larger map; the entry-browser toggle hides the sidebar. Guided tour plays a 24-second camera journey. Motion controls ambient ring movement and connection pulses. Reduced-motion preferences disable ambient animation and shorten navigation transitions.
 
-Three.js and GSAP use pinned CDN URLs; fonts use Google Fonts with a system-font fallback. If WebGL or Three.js cannot load, an interactive SVG map still shows the projects, entries, and links. If GSAP cannot load, editing and navigation remain usable without camera animation or a tour.
+Three.js, OrbitControls, and GSAP are bundled in vendor/ and loaded from your own site. Fonts use Google Fonts with a system-font fallback; fonts do not affect the 3D controls. If WebGL or the local graphics files cannot load, an interactive SVG map still shows the projects, entries, and links. The instructions now explicitly say 2D mode. The Graphics button shows the startup error and build number. If GSAP cannot load, editing and navigation remain usable without camera animation or a tour.
 
 ## HyperFrames composition starter
 
@@ -71,8 +77,28 @@ Quickstart: https://hyperframes.heygen.com/quickstart
 
 ## Validation
 
-JavaScript syntax, DOM references, workspace upgrades, note preservation, cross-project endpoint validation, forward and reverse portal travel, return navigation, bridge creation/editing/deletion, entry/project creation, browser-local persistence, and unsafe import rejection passed automated checks. The fallback map and interface logic were exercised in a lightweight DOM harness. This does not verify actual browser visuals. Browser visual QA and HyperFrames video rendering were unavailable in the creation environment.
+JavaScript syntax, DOM references, workspace upgrades, note preservation, cross-project endpoint validation, forward and reverse portal travel, return navigation, bridge creation/editing/deletion, entry/project creation, browser-local persistence, and unsafe import rejection passed automated checks. The previous startup-order failure was reproduced, and the corrected startup passed tests with the actual bundled Three.js and OrbitControls: pointer drag changes the camera, wheel input changes its distance, and controls remain enabled after focus and project switching. WebGL drawing was replaced with a renderer stub in these tests. Cache-control response headers, local file paths, and the complete dependency package were also checked. Browser visual QA and HyperFrames video rendering remain unverified.
 
 ## Scope
 
 This app supports internal and cross-project entry links. Real-time collaboration, cloud synchronization, PDF/BibTeX import, project renaming/deletion, and automated research summaries are not implemented.
+
+
+## Release 1.1.0 / build 20261013-02
+
+- Renamed the app to Project Mind Map.
+- Fixed a startup-order bug: resize/render ran against the initial fallback nodes before they had 3D positions. That triggered an exception and incorrectly kept the app in 2D mode.
+- Bundled graphics and animation libraries locally. The vendor folder must be uploaded with the app.
+- Added a Graphics diagnostics button, mode-aware instructions, a visible build label, and versioned app asset URLs.
+- Added the cache-disabled Python launcher, anchored to this release's folder.
+- Retained the existing browser-storage key so the name change preserves notes and projects on the same origin.
+
+## An earlier local version still appears
+
+1. In the old Python terminal, press Ctrl+C.
+2. Extract the new package into a fresh folder.
+3. Run the new folder's Start-Project-Mind-Map.bat or `py serve.py`.
+4. Open the printed URL and hard refresh with Ctrl+Shift+R on Windows/Linux (Command+Shift+R on macOS).
+5. Check the footer for build 20261013-02. If it is absent, you are still seeing older files.
+
+If only your project content looks familiar while the interface/build is current, that is your saved workspace. Updating the app deliberately preserves it. Export before clearing site storage; a hard reload alone does not delete notes.

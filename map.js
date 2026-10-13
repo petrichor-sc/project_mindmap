@@ -1,25 +1,27 @@
-import {groups,bridgeConnections,resolveEndpoint} from './data.js';
+import {groups,bridgeConnections,resolveEndpoint} from './data.js?v=20261013-02';
 const ns='http://www.w3.org/2000/svg';
 export class UniverseMap {
-  constructor({host,labels,status,onProject,onNode,onBridge,reduced=false,film=false}){
-    Object.assign(this,{host,labels,status,onProject,onNode,onBridge,reduced,film});
-    this.T=null;this.items=[];this.links=[];this.rings=[];this.pulses=[];this.motion=!reduced;this.view='hub';this.selected=null;this.frame=0;this.tween=null;this.hubPositions=new Map();
+  constructor({host,labels,status,onProject,onNode,onBridge,onModeChange=()=>{},reduced=false,film=false}){
+    Object.assign(this,{host,labels,status,onProject,onNode,onBridge,onModeChange,reduced,film});
+    this.T=null;this.items=[];this.links=[];this.rings=[];this.pulses=[];this.motion=!reduced;this.view='hub';this.selected=null;this.frame=0;this.tween=null;this.hubPositions=new Map();this.mode='loading';this.graphicsError=null;
     this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(host);
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)this.startAmbient()});
   }
+  async loadGraphics(){return Promise.all([import('three'),import('three/addons/controls/OrbitControls.js')]);}
+  reportMode(mode,error=null){this.mode=mode;this.graphicsError=error;this.onModeChange({mode,error});}
   async init(){
     try{
-      const T=await import('three');const {OrbitControls}=await import('three/addons/controls/OrbitControls.js');
+      const [T,{OrbitControls}]=await this.loadGraphics();
       this.T=T;this.scene=new T.Scene();this.camera=new T.PerspectiveCamera(45,1,.1,250);this.camera.position.set(0,3,32);
       this.renderer=new T.WebGLRenderer({antialias:true,alpha:true});this.renderer.setPixelRatio(Math.min(devicePixelRatio,2));this.renderer.setClearColor(0x000000,0);
       this.host.replaceChildren(this.renderer.domElement);
-      let pointerStart=null;this.renderer.domElement.addEventListener('pointerdown',e=>{pointerStart={x:e.clientX,y:e.clientY}});this.renderer.domElement.addEventListener('pointerup',e=>{if(!pointerStart||Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)>6)return;const r=this.host.getBoundingClientRect(),ray=new T.Raycaster();ray.setFromCamera(new T.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),this.camera);const hits=ray.intersectObjects(this.items.filter(i=>i.visible).map(i=>i.mesh).filter(Boolean));if(hits.length)this.items.find(i=>i.mesh===hits[0].object)?.action();pointerStart=null;});this.controls=new OrbitControls(this.camera,this.renderer.domElement);this.controls.minDistance=6;this.controls.maxDistance=100;this.controls.maxPolarAngle=Math.PI*.8;this.controls.target.set(0,0,0);this.controls.addEventListener('change',()=>this.render());
+      let pointerStart=null;this.renderer.domElement.addEventListener('pointerdown',e=>{pointerStart={x:e.clientX,y:e.clientY}});this.renderer.domElement.addEventListener('pointerup',e=>{if(!pointerStart||Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)>6)return;const r=this.host.getBoundingClientRect(),ray=new T.Raycaster();ray.setFromCamera(new T.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),this.camera);const hits=ray.intersectObjects(this.items.filter(i=>i.visible).map(i=>i.mesh).filter(Boolean));if(hits.length)this.items.find(i=>i.mesh===hits[0].object)?.action();pointerStart=null;});this.controls=new OrbitControls(this.camera,this.renderer.domElement);this.controls.enabled=!this.film;this.controls.enableRotate=true;this.controls.enableZoom=true;this.controls.enableDamping=false;this.controls.minDistance=6;this.controls.maxDistance=100;this.controls.maxPolarAngle=Math.PI*.8;this.controls.target.set(0,0,0);this.controls.addEventListener('change',()=>this.render());
       this.scene.add(new T.HemisphereLight('#ffffff','#8493b2',2.7));const light=new T.DirectionalLight('#ffffff',3.8);light.position.set(-8,14,18);this.scene.add(light);const pink=new T.PointLight('#ffbbd0',45);pink.position.set(8,8,12);this.scene.add(pink);
       this.background=new T.Group();const points=[];for(let i=0;i<260;i++)points.push(Math.sin(i*127.1)*40,Math.cos(i*71.9)*25,Math.sin(i*43.7)*10-20);
       this.background.add(new T.Points(new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute(points,3)),new T.PointsMaterial({color:'#8d9caf',size:.028,transparent:true,opacity:.35})));this.scene.add(this.background);
-      this.resize();if(this.workspace)this.setView(this.workspace,this.projectId);this.status.textContent='3D ready · drag to orbit, scroll to zoom';this.startAmbient();
+      if(this.workspace)this.setView(this.workspace,this.projectId);else{this.clear();this.resize()}this.status.textContent='3D ready · drag empty space to orbit, scroll to zoom';this.reportMode('3d');this.startAmbient();
       return true;
-    }catch(error){console.warn('Three.js unavailable; using 2D map.',error);this.T=null;this.renderer?.dispose();this.renderer=null;this.host.replaceChildren();this.drawFallback();this.status.textContent='2D map · 3D needs WebGL and access to the CDN';return false;}
+    }catch(error){console.warn('3D initialization failed; using the 2D map.',error);cancelAnimationFrame(this.frame);this.frame=0;this.controls?.dispose();this.controls=null;this.T=null;this.renderer?.dispose();this.renderer=null;this.host.replaceChildren();this.drawFallback();const reason=error?.message||String(error);this.graphicsError=reason;this.status.textContent='2D mode · Open Graphics for details';this.reportMode('2d',reason);return false;}
   }
   clear(){
     if(this.graph){this.graph.traverse(o=>{o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose()});this.scene.remove(this.graph)}

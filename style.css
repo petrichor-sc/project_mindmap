@@ -4,3 +4,5 @@
 @media(max-width:460px){.map-tools .motion-switch{font-size:10px}.map-top>div:first-child{max-width:230px}.project-label{width:114px}.edge-label{width:90px}.node-label{width:96px}.portal-label{width:98px}}
 
 @media(max-width:520px){.node-label:not(.active){display:none}.portal-label{width:90px;font-size:9px}.project-label{width:112px}.map-stage .node-label.active{width:115px}}
+
+#scene-host{z-index:1;pointer-events:auto}#scene-host canvas{touch-action:none;cursor:grab}#scene-host canvas:active{cursor:grabbing}.build-label{margin-left:8px;color:#7869b2;font-size:10px}#graphics-error{white-space:pre-wrap;overflow-wrap:anywhere}.card-actions{flex-wrap:wrap}
