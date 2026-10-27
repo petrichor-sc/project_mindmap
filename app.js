@@ -1,13 +1,13 @@
-import {groups,initialData,validateData,starterWorkspace,validateWorkspace,upgradeWorkspace,projectAtlas,structures,bridgeConnections,resolveEndpoint} from './data.js?v=20261013-02';
-import {UniverseMap} from './map.js?v=20261013-02';
+import {groups,initialData,validateData,starterWorkspace,validateWorkspace,upgradeWorkspace,projectAtlas,structures,bridgeConnections,resolveEndpoint} from './data.js?v=20261027-01';
+import {UniverseMap} from './map.js?v=20261027-01';
 const $=id=>document.getElementById(id),film=document.documentElement.dataset.film==='true',storageKey='project-atlas-workspace-v2';
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let workspace=starterWorkspace(),activeId=null,data=structuredClone(initialData),selected=null,editing=null,editingBridge=null,timeline=null,travel=null;
 let startupMessage='';
 if(!film)try{const raw=localStorage.getItem(storageKey);if(raw)workspace=upgradeWorkspace(JSON.parse(raw));}catch{startupMessage='Saved workspace could not be read. Starter projects are shown.'}
-const map=new UniverseMap({host:$('scene-host'),labels:$('map-labels'),status:$('status'),reduced,film,onModeChange:state=>updateGraphics(state),onProject:id=>openProject(id),onNode:id=>select(id),onBridge:(id,p)=>followBridge(id,p)});
+const map=new UniverseMap({host:$('scene-host'),labels:$('map-labels'),status:$('status'),reduced,film,onModeChange:state=>updateGraphics(state),onProject:id=>openProject(id),onNode:id=>select(id),onBridge:(id,p)=>followBridge(id,p),onGroup:group=>{if(!activeId)return;$('search').value='';$('filter').value=group;overview(false);}});
 const project=id=>workspace.projects.find(p=>p.id===id),node=id=>data.nodes.find(n=>n.id===id);
-const BUILD_ID='20261013-02';
+const BUILD_ID='20261027-01';
 function updateGestureHelp(){const mode=map.mode;if(mode==='3d')$('gesture-help').textContent='Drag empty space to orbit · Scroll to zoom · Select a portal to travel';else if(mode==='2d')$('gesture-help').textContent='2D mode · Select an entry or portal; orbit and zoom are unavailable';else $('gesture-help').textContent='Select a universe or entry · 3D is loading';}
 function updateGraphics(state={mode:map.mode,error:map.graphicsError}){updateGestureHelp();$('graphics-mode').textContent=state.mode==='3d'?'3D active · WebGL renderer and orbit controls loaded':state.mode==='2d'?'2D fallback · 3D could not start':'Loading graphics';$('graphics-error').textContent=state.error||'No initialization error reported.';}
 $('graphics-info').onclick=()=>{updateGraphics();$('graphics-build').textContent=BUILD_ID;$('graphics-dialog').showModal()};$('close-graphics').onclick=()=>$('graphics-dialog').close();
@@ -77,7 +77,28 @@ $('tour').onclick=()=>{if(!timeline){$('status').textContent='Tour animation una
 $('motion').checked=!reduced;$('motion').disabled=reduced;$('motion').onchange=()=>{document.body.classList.toggle('motion-off',!$('motion').checked);map.setMotion($('motion').checked)};
 $('expand').onclick=()=>{const expanded=document.body.classList.toggle('expanded');$('expand').setAttribute('aria-label',expanded?'Restore layout':'Expand map');setTimeout(()=>map.resize(),0)};
 $('close-library').onclick=()=>{document.body.classList.add('library-hidden');$('show-library').hidden=false;setTimeout(()=>map.resize(),0)};$('show-library').onclick=()=>{document.body.classList.remove('library-hidden');$('show-library').hidden=true;setTimeout(()=>map.resize(),0)};
-$('projects').onclick=showProjects;$('brand').onclick=e=>{e.preventDefault();showProjects()};$('home').onclick=()=>overview();$('export').onclick=download;$('search').oninput=renderList;$('filter').onchange=renderList;$('notes').oninput=()=>{if(selected){data.notes[selected]=$('notes').value;save()}};
+$('projects').onclick=showProjects;$('brand').onclick=e=>{e.preventDefault();showProjects()};$('home').onclick=()=>overview();
+// A simple exploration affordance: find a new place without searching menus.
+$('wander').onclick=()=>{
+  if(!activeId){
+    if(!workspace.projects.length)return;
+    const destinations=workspace.projects;
+    openProject(destinations[Math.floor(Math.random()*destinations.length)].id);
+    return;
+  }
+  const candidates=data.nodes.filter(n=>n.id!==selected);
+  if(!candidates.length)return;
+  $('search').value='';$('filter').value='all';
+  select(candidates[Math.floor(Math.random()*candidates.length)].id);
+};
+// Keyboard navigation remains secondary to the accessible buttons.
+document.addEventListener('keydown',event=>{
+  if(event.target.closest?.('input,textarea,select,[contenteditable="true"]')||document.querySelector('dialog[open]'))return;
+  if(event.key.toLowerCase()==='f'&&!event.altKey&&!event.ctrlKey&&!event.metaKey){
+    event.preventDefault();$('expand').click();
+  }
+});
+$('export').onclick=download;$('search').oninput=renderList;$('filter').onchange=renderList;$('notes').oninput=()=>{if(selected){data.notes[selected]=$('notes').value;save()}};
 $('new-project').onclick=()=>{$('project-error').textContent='';$('project-dialog').showModal()};$('close-project').onclick=()=>$('project-dialog').close();$('add').onclick=()=>entryDialog();$('edit').onclick=()=>entryDialog(selected);$('close-dialog').onclick=()=>$('paper-dialog').close();$('add-bridge').onclick=()=>bridgeDialog();$('hub-add-bridge').onclick=()=>bridgeDialog();$('close-bridge').onclick=()=>$('bridge-dialog').close();
 if(film){document.body.classList.add('film');openProject('thesis');map.setMotion(false)}else showProjects();
 map.init().then(()=>{if(activeId){createTour();if(selected)map.focusNode(selected)}if(film){map.setMotion(false);if(map.controls)map.controls.enabled=false}window.atlasReady=true;if(startupMessage)$('status').textContent=startupMessage;});

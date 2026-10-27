@@ -6,3 +6,201 @@
 @media(max-width:520px){.node-label:not(.active){display:none}.portal-label{width:90px;font-size:9px}.project-label{width:112px}.map-stage .node-label.active{width:115px}}
 
 #scene-host{z-index:1;pointer-events:auto}#scene-host canvas{touch-action:none;cursor:grab}#scene-host canvas:active{cursor:grabbing}.build-label{margin-left:8px;color:#7869b2;font-size:10px}#graphics-error{white-space:pre-wrap;overflow-wrap:anywhere}.card-actions{flex-wrap:wrap}
+
+/* ============================================================================
+   CONSTELLATION EDITION · 2026-10-27
+   Dark, spatial visual system. No data schema changes; existing notes are safe.
+   ============================================================================ */
+:root{
+  color-scheme:dark;
+  --bg:#070b16;--text:#e9eefc;--muted:#99a9c3;--stroke:#8f9fc52a;
+  --lime:#ccf88b;--pink:#fb91dc;--purple:#a797ff;--panel:#101b30df;
+  --shadow:0 25px 95px #01040d7a;
+}
+body{
+  color:var(--text);
+  background:radial-gradient(ellipse 70% 50% at 73% 5%,#221c42 0,transparent 70%),
+    radial-gradient(ellipse 55% 55% at -7% 60%,#082d3b 0,transparent 75%),
+    linear-gradient(145deg,#090f20,#060916 65%,#0e1228);
+}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background-image:radial-gradient(#cad7ff55 .6px,transparent .9px);
+  background-size:29px 32px;opacity:.1;}
+.topbar{border-bottom-color:#a5beee1c;padding-block:19px;background:#0a10208a;backdrop-filter:blur(20px)}
+.brand{color:#f6f4ff}.brand-mark{color:#ad9cfa;text-shadow:0 0 25px #9c87fa88}
+.brand small{color:#91a4bf}
+.workspace-heading{padding-top:25px;padding-bottom:23px}
+.workspace-heading h1{font-weight:500;letter-spacing:-.055em;
+  background:linear-gradient(95deg,#fff,#d4d7ff 54%,#86e4ee);background-clip:text;-webkit-background-clip:text;color:transparent;}
+.workspace-heading p:last-child,.section-heading p{color:#9cabc2}
+.heading-stats{background:#101c32d9;border:1px solid #c0d2ff1f;box-shadow:inset 0 1px #ffffff0b}
+.heading-stats span:first-child{color:#bbf7dd}
+button,.file-button{background:#19243b;border-color:#9ca9d836;color:#e8edfa}
+button:hover,.file-button:hover{background:#293650;box-shadow:0 7px 30px #02051488;border-color:#acb9e25c}
+button.primary{background:linear-gradient(115deg,#b9f4a3,#d7f9ad);color:#102b21;box-shadow:0 6px 22px #c3ff9c21}
+.quiet-button{background:#ffffff08;border-color:#b5caee27}
+.glass{background:linear-gradient(155deg,#18223aeb,#0c1427ec);border:1px solid #a4b5eb25;
+  border-radius:22px;box-shadow:0 18px 65px #000a,inset 0 1px #ffffff12;backdrop-filter:blur(24px)}
+#app-shell{grid-template-columns:218px minmax(300px,1fr) 263px;gap:12px;margin-inline:clamp(12px,1.6vw,30px)}
+.library,.detail{padding:20px 17px;max-height:820px;overflow:auto;scrollbar-width:thin;scrollbar-color:#53607e transparent}
+.library h2,.detail h2{color:#f7f6ff}.muted,.micro,.eyebrow,label{color:#9daac2}
+label{margin-top:16px}
+input,select,textarea{background:#0c1428b8;border-color:#7784aa47;color:#e8ecfa}
+input::placeholder,textarea::placeholder{color:#7c8ba5}
+option{background:#101a30;color:#f1f4ff}
+.topic{color:#c9d4eb}
+.topic:hover{background:#ffffff10}
+.topic.active{background:#8a76ef33;box-shadow:inset 2px 0 #a699ff}
+.group-name{color:#7de4d9}
+.map-stage,.hub-mode .map-stage{
+  min-height:760px;isolation:isolate;
+  background:
+    radial-gradient(ellipse 44% 60% at 52% 48%,#40336b48 0,transparent 85%),
+    radial-gradient(ellipse 42% 32% at 12% 74%,#084d604f,transparent 90%),
+    radial-gradient(ellipse 38% 36% at 88% 21%,#4f287238,transparent 95%),
+    linear-gradient(145deg,#0b1329 0,#080e20 55%,#0b1024);
+  border:1px solid #8495c533;box-shadow:0 25px 115px #020512cc,inset 0 0 110px #080a20a6;
+}
+.map-stage::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse at center,transparent 36%,#03071274 100%);
+}
+.map-stage::after{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.15;
+  background:repeating-linear-gradient(0deg,transparent,transparent 69px,#6477bc13 70px),
+  repeating-linear-gradient(90deg,transparent,transparent 69px,#6477bc13 70px);
+  mask-image:linear-gradient(to bottom,transparent 3%,black 65%,transparent);
+}
+.map-top{top:20px;left:20px;right:20px}
+.map-top .eyebrow{color:#a7bafb}
+.map-top p{color:#8196b7;max-width:385px;line-height:1.5}
+.map-tools{gap:6px;justify-content:flex-end}
+.map-tools button{background:#101d34ad;border-color:#a2b7e326;backdrop-filter:blur(12px)}
+.map-tools button:hover{background:#273855e6}
+.motion-switch{color:#afbbd4}
+#scene-host{z-index:1}
+#map-labels{z-index:2}
+.node-label,.project-label,.portal-label,.edge-label{
+  box-shadow:none;color:#e8eeff;line-height:1.34;
+  transition:opacity .22s,transform .24s,background .22s,border-color .22s,box-shadow .22s;
+}
+.node-label{
+  width:max-content;max-width:162px;min-width:58px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  display:flex;gap:7px;justify-content:flex-start;text-align:left;
+  background:#0b1731b8;border:1px solid #a9caff21;
+  border-radius:10px;padding:7px 9px;font-size:10.5px;
+  transform:translate(0,-50%);backdrop-filter:blur(11px);
+  box-shadow:0 4px 18px #0005;
+}
+.node-label span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.node-label .node-marker{display:block;width:5px;height:5px;border-radius:50%;background:var(--entry-glow);flex-shrink:0;
+  box-shadow:0 0 10px var(--entry-glow);align-self:center}
+.node-label.label-on-left{transform:translate(-100%,-50%)}
+.node-label.active,.node-label.hovered,.node-label:hover,.node-label:focus-visible{
+  background:#1c2c4cf0;border-color:var(--entry-glow);
+  box-shadow:0 0 20px color-mix(in srgb,var(--entry-glow) 24%,transparent),0 6px 22px #0007;
+  transform:translate(0,-50%) scale(1.06);
+}
+.node-label.label-on-left.active,.node-label.label-on-left.hovered,.node-label.label-on-left:hover{
+  transform:translate(-100%,-50%) scale(1.06);
+}
+.project-label{
+  display:flex;flex-direction:column;gap:3px;
+  width:188px;max-width:188px;padding:11px 13px;
+  border:1px solid #a9b7df3f;border-radius:14px;
+  background:linear-gradient(160deg,#1b2a48e9,#101b33dc);backdrop-filter:blur(16px);
+  box-shadow:0 15px 38px #0008,0 0 40px color-mix(in srgb,var(--entry-glow) 12%,transparent);
+}
+.project-label::before{content:'';position:absolute;left:16px;right:16px;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--entry-glow),transparent)}
+.project-label small{color:var(--entry-glow);font-size:9px;letter-spacing:.14em;font-weight:600}
+.project-label strong{font-size:14px;line-height:1.35;font-weight:600;color:#fff}
+.project-label .entry-sub{font-size:10px;color:#9db0ce}
+.project-label .enter-label{color:#d5fac2;background:#a3cf7326;border:1px solid #abf28f40;
+  border-radius:6px;padding:5px 9px;align-self:center;margin-top:5px;letter-spacing:.11em;font-size:9px}
+.project-label:hover,.project-label.hovered{border-color:var(--entry-glow);
+  transform:translate(-50%,-50%) translateY(-5px) scale(1.03);
+  box-shadow:0 20px 55px #000a,0 0 35px color-mix(in srgb,var(--entry-glow) 25%,transparent)}
+.portal-label{
+  width:139px;display:flex;flex-direction:column;padding:9px 10px;gap:4px;
+  border-radius:12px;color:#eefbca;
+  background:linear-gradient(140deg,#273b36e6,#192d29e9);border:1px solid #b4f27c70;
+  backdrop-filter:blur(12px);box-shadow:0 9px 26px #0008,0 0 23px #bafa6235;
+  font-size:11px;
+}
+.portal-label small{font-size:8px;color:#b8ed8b;letter-spacing:.1em}
+.portal-label:hover,.portal-label.hovered{box-shadow:0 10px 40px #000b,0 0 35px #bafa6260;border-color:#d4ffab}
+.edge-label{background:#1d2849ca;color:#bfb6fc;font-size:9px;width:112px;padding:6px 9px;border:1px solid #c2b7fc2d;border-radius:100px;backdrop-filter:blur(14px)}
+.edge-label:hover{background:#35336a;color:#f4efff}
+.map-floor{opacity:.14;height:145px;background:repeating-linear-gradient(0deg,transparent,transparent 23px,#b0a8ff36 24px),repeating-linear-gradient(90deg,transparent,transparent 30px,#b0a8ff30 31px)}
+.map-legend,.map-bottom{color:#8fa4c1}
+.map-legend .portal-legend{color:#c8f394}
+.map-legend i{border-color:#9f97f4}
+.map-bottom{bottom:14px}
+.tour-caption{background:#15243aeb;border:1px solid #94aadd3d;box-shadow:0 20px 55px #0009}
+.tour-caption h2{color:#f2f4ff}.tour-caption p{color:#b3c3d6}
+#description{color:#adbcd3}
+#reference,.related small{color:#8ea2bc}
+.related{background:#ffffff08;border-color:#a6b8d525;color:#dbe4f8}
+.related:hover{background:#ffffff17}
+.cross-section{border-color:#b3c9ff1c}
+.cross-card,#bridge-list .cross-card{background:#14283a;border:1px solid #a8cfea24;color:#d8e5f4}
+.cross-card .route,.cross-card .endpoints{color:#94a9bf}
+.status-tag{background:#66512660;color:#f3d793}
+.status-tag.confirmed{background:#1e584b8c;color:#b5f2d8}
+.section-heading h2{color:#eff3ff}
+.project-card{background:linear-gradient(150deg,#14213a,#11192c);border-color:#9eb3dd2a;min-height:230px}
+.project-card:hover{box-shadow:0 20px 55px #0008;border-color:#a4b2ef65}
+.project-card p{color:#a5b6cb}.project-card small{color:#bee2a1}
+.project-card .card-tag{color:#98aaff}
+.project-card .card-orb{box-shadow:inset -10px -16px 20px #060c1fc7,0 12px 37px color-mix(in srgb,var(--universe-color) 35%,transparent),0 0 35px color-mix(in srgb,var(--universe-color) 25%,transparent)}
+#travel-banner{background:#142d2f;border:1px solid #98f6ce4f;color:#d3f4e5}
+footer{border-top-color:#a4b6df1c}
+dialog{background:linear-gradient(155deg,#1a2741,#0e192d);border:1px solid #a6bbe345;color:var(--text)}
+dialog::backdrop{background:#030714ae}
+.build-label{color:#a5b7f7}
+.expanded .map-stage{min-height:min(90vh,1000px)}
+.expanded #app-shell{margin-inline:12px}
+.library-hidden #app-shell:not(.hub-mode){grid-template-columns:minmax(300px,1fr) 263px}
+@media(max-width:1200px){
+  #app-shell{grid-template-columns:205px minmax(300px,1fr)}
+  .detail{max-height:none;display:grid;grid-template-columns:1fr 1fr;gap:0 20px}
+  .library-hidden #app-shell:not(.hub-mode){grid-template-columns:1fr}
+}
+@media(max-width:720px){
+  .map-stage,.hub-mode .map-stage{min-height:650px}
+  .map-top{top:13px;left:13px;right:13px}
+  .map-top .eyebrow{font-size:8px}
+  .map-top>div:first-child{max-width:155px}
+  .map-top p{font-size:10px}
+  .map-tools{max-width:58%}
+  .map-tools button{font-size:10px;padding:7px 9px}
+  .project-label{width:142px;max-width:142px}
+  .project-label strong{font-size:12px}
+  .project-label .entry-sub{font-size:9px}
+  .node-label{max-width:106px;font-size:10px;padding:6px 7px}
+  .portal-label{width:105px;font-size:9px}
+  .detail{display:block}
+}
+@media(max-width:520px){
+  /* Mobile keeps the constellation explorable without covering all its stars. */
+  .node-label:not(.active):not(.hovered){display:none}
+  .portal-label{width:96px}
+  .project-label{width:114px;max-width:114px;padding:9px}
+  .project-label strong{font-size:10px}
+  .project-label .enter-label{font-size:8px}
+  .map-tools .motion-switch{display:none}
+}
+.film .map-stage{min-height:1080px}
+.film .node-label{max-width:225px;font-size:18px;padding:9px 15px}
+.film .portal-label{width:220px;font-size:19px}
+.film .tour-caption{background:#101c35e9}
+@media(prefers-reduced-motion:reduce){.node-label,.project-label,.portal-label,.edge-label{transition:none!important}}
+
+.cluster-caption{position:absolute;pointer-events:auto;transform:translate(-50%,-50%);
+  border:1px solid color-mix(in srgb,var(--entry-glow) 38%,transparent);background:#0a1831a8;
+  color:#dbe6ff;padding:7px 11px;border-radius:100px;white-space:nowrap;
+  font:600 9px 'Space Grotesk',sans-serif;letter-spacing:.10em;backdrop-filter:blur(12px);
+  box-shadow:0 0 26px color-mix(in srgb,var(--entry-glow) 14%,transparent);}
+.cluster-caption:hover{background:#1b2e52;color:white;border-color:var(--entry-glow);}
+@media(max-width:720px){.cluster-caption{font-size:8px;max-width:118px;white-space:normal;padding:5px 8px}}
