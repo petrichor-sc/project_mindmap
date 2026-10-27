@@ -1,11 +1,11 @@
-import {groups,bridgeConnections,resolveEndpoint} from './data.js?v=20261027-01';
+import {groups,bridgeConnections,resolveEndpoint} from './data.js?v=20261027-03';
 
 const ns='http://www.w3.org/2000/svg';
 const GOLDEN_ANGLE=2.399963229728653;
 
 export class UniverseMap {
-  constructor({host,labels,status,onProject,onNode,onBridge,onGroup=()=>{},onModeChange=()=>{},reduced=false,film=false}) {
-    Object.assign(this,{host,labels,status,onProject,onNode,onBridge,onModeChange,reduced,film});
+  constructor({host,labels,status,onProject,onNode,onDive=()=>{},onBridge,onGroup=()=>{},onModeChange=()=>{},reduced=false,film=false}) {
+    Object.assign(this,{host,labels,status,onProject,onNode,onDive,onBridge,onModeChange,reduced,film});
     this.T=null;this.items=[];this.links=[];this.rings=[];this.pulses=[];this.halos=[];this.clusterDecor=[];
     this.motion=!reduced;this.view='hub';this.selected=null;this.hovered=null;this.frame=0;this.tween=null;
     this.hubPositions=new Map();this.mode='loading';this.graphicsError=null;
@@ -118,16 +118,16 @@ export class UniverseMap {
     this.hovered=null;this.labels.replaceChildren();this.selected=null;
     if(this.T){this.graph=new this.T.Group();this.scene.add(this.graph);}
   }
-  setView(workspace,projectId=null){
+  setView(workspace,projectId=null,scopeId=null){
     this.tween?.kill();this.workspace=workspace;this.projectId=projectId;
-    this.view=projectId?'project':'hub';this.clear();
+    this.view=projectId?'project':'hub';this.scopeId=scopeId;this.clear();
     if(projectId)this.buildProject();else this.buildHub();
     if(this.T){this.resize();this.recenter(false);this.resetMotion();this.render();}else this.drawFallback();
   }
-  makeItem({key,title,type,point,color,action,subtitle='',linkId=null}){
+  makeItem({key,title,type,point,color,action,subtitle='',linkId=null,childCount=0,depth=0}){
     const b=document.createElement('button');b.type='button';
     b.className=type==='project'?'project-label':type==='portal'?'portal-label':'node-label';
-    b.dataset.key=key;b.style.setProperty('--entry-glow',color);b.onclick=action;
+    b.dataset.key=key;b.dataset.depth=String(depth);b.style.setProperty('--entry-glow',color);b.onclick=action;if(type==='node'&&childCount){b.classList.add('has-children');b.title=childCount+' subtopics · double-click to dive';b.ondblclick=()=>this.onDive(key);}
     if(type==='project'){
       const eyebrow=document.createElement('small');eyebrow.textContent='UNIVERSE';
       const strong=document.createElement('strong');strong.textContent=title;
@@ -139,18 +139,18 @@ export class UniverseMap {
       const txt=document.createElement('span');txt.textContent=title;b.append(small,txt);
     }else{
       const icon=document.createElement('i');icon.className='node-marker';icon.setAttribute('aria-hidden','true');
-      const txt=document.createElement('span');txt.textContent=title;b.append(icon,txt);
+      const txt=document.createElement('span');txt.textContent=title;b.append(icon,txt);if(childCount){const count=document.createElement('small');count.className='node-child-count';count.textContent=String(childCount)+' ↳';b.append(count);}
     }
     b.setAttribute('aria-label',type==='portal'?'Open connected entry in '+title:title);
     this.labels.append(b);
-    const item={key,title,type,point,color,button:b,linkId,visible:true,action};this.items.push(item);
+    const item={key,title,type,point,color,button:b,linkId,visible:true,action,depth,childCount};this.items.push(item);
     b.addEventListener('mouseenter',()=>this.setHover(item));
     b.addEventListener('mouseleave',()=>this.setHover(null));
     b.addEventListener('focus',()=>this.setHover(item));
     b.addEventListener('blur',()=>this.setHover(null));
     if(this.T){
       const T=this.T;item.position=new T.Vector3(...point);
-      const radius=type==='project'?1.18:type==='portal'?.65:.41;
+      const radius=type==='project'?1.18:type==='portal'?.65:childCount?Math.max(.46,.58-depth*.055):Math.max(.27,.39-depth*.03);
       const mat=new T.MeshPhysicalMaterial({color,metalness:.34,roughness:.13,clearcoat:1,clearcoatRoughness:.09,
         emissive:color,emissiveIntensity:type==='node'?.65:.52});
       const mesh=new T.Mesh(new T.SphereGeometry(radius,36,24),mat);
@@ -165,7 +165,7 @@ export class UniverseMap {
       halo.position.copy(item.position);const glowSize=radius*(type==='project'?6.2:7.5);
       halo.scale.set(glowSize,glowSize,1);this.graph.add(halo);item.halo=halo;
       this.halos.push({item,sprite:halo,base:glowSize,index:this.halos.length});
-      if(type!=='node'){
+      if(type!=='node'||childCount>0){
         const geo=new T.TorusGeometry(radius*(type==='project'?1.62:1.8),type==='project'?.024:.017,8,96);
         const ring=new T.Mesh(geo,new T.MeshBasicMaterial({color,transparent:true,opacity:.56,depthWrite:false}));
         ring.position.copy(item.position);ring.rotation.set(.72,.35,-.27);this.graph.add(ring);
@@ -177,9 +177,9 @@ export class UniverseMap {
     }
     return item;
   }
-  makeLink(source,target,{color='#8073b0',label='',proposed=false,bridge=null,external=false}={}){
+  makeLink(source,target,{color='#8073b0',label='',proposed=false,bridge=null,external=false,hierarchy=false}={}){
     if(!source||!target)return null;
-    const record={source,target,label,proposed,bridge,external};this.links.push(record);
+    const record={source,target,label,proposed,bridge,external,hierarchy};this.links.push(record);
     if(this.T){
       const T=this.T,a=new T.Vector3(...source.point),b=new T.Vector3(...target.point);
       const mid=a.clone().lerp(b,.5);
@@ -189,13 +189,13 @@ export class UniverseMap {
       const points=curve.getPoints(42);
       const lineMaterial=proposed?
         new T.LineDashedMaterial({color,transparent:true,opacity:.38,depthWrite:false,dashSize:.23,gapSize:.14}):
-        new T.LineBasicMaterial({color,transparent:true,opacity:.43,depthWrite:false});
+        new T.LineBasicMaterial({color,transparent:true,opacity:hierarchy?.72:.43,depthWrite:false});
       const line=new T.Line(new T.BufferGeometry().setFromPoints(points),lineMaterial);
       if(proposed)line.computeLineDistances();
       this.graph.add(line);record.line=line;
       // Soft outer thread adds luminosity without covering the actual connection.
-      const tube=new T.Mesh(new T.TubeGeometry(curve,42,external?.052:.033,5,false),
-        new T.MeshBasicMaterial({color,transparent:true,opacity:proposed?.09:.17,depthWrite:false,blending:T.AdditiveBlending}));
+      const tube=new T.Mesh(new T.TubeGeometry(curve,42,external?.052:hierarchy?.053:.033,5,false),
+        new T.MeshBasicMaterial({color,transparent:true,opacity:proposed?.09:hierarchy?.32:.17,depthWrite:false,blending:T.AdditiveBlending}));
       this.graph.add(tube);record.tube=tube;
       const pulse=new T.Mesh(new T.SphereGeometry(external?.105:.068,12,9),
         new T.MeshBasicMaterial({color,transparent:true,opacity:proposed?.52:.88,depthWrite:false}));
@@ -260,35 +260,58 @@ export class UniverseMap {
   }
   buildProject(){
     const p=this.workspace.projects.find(p=>p.id===this.projectId);if(!p)return;
-    const nodes=new Map();const names=Object.keys(groups);
+    const all=new Map(p.atlas.nodes.map(n=>[n.id,n]));
+    const belongs=n=>{if(!this.scopeId)return true;const visited=new Set();let current=n;
+      while(current&&!visited.has(current.id)){if(current.id===this.scopeId)return true;visited.add(current.id);current=all.get(current.parentId)}return false;
+    };
+    const nodes=new Map();const names=Object.keys(groups).filter(key=>!this.scopeId||all.get(this.scopeId)?.group===key);
+    const byGroup=key=>p.atlas.nodes.filter(n=>n.group===key&&belongs(n));
     names.forEach((group,gi)=>{
-      const ns=p.atlas.nodes.filter(n=>n.group===group);
-      const base=(gi-1)*8.9;this.makeCluster(gi,base,groups[group].color,p.atlas.groupLabels?.[group]||groups[group].label,group);
-      ns.forEach((n,i)=>{
-        const angle=i*GOLDEN_ANGLE+gi*.6;
-        const radius=i===0?.68:2.15+Math.sqrt(i)*1.22;
-        const point=[base+Math.cos(angle)*radius*.69,Math.sin(angle)*radius*1.04,
-          Math.sin(angle*1.35+gi*1.4)*3.5+(i%3-1)*.65];
+      const ns=byGroup(group);if(!ns.length)return;
+      const base=this.scopeId?0:(Object.keys(groups).indexOf(group)-1)*8.9;
+      this.makeCluster(gi,base,groups[group].color,p.atlas.groupLabels?.[group]||groups[group].label,group);
+      const children=new Map();for(const n of ns){const parent=all.get(n.parentId);if(parent&&ns.includes(parent)){
+        if(!children.has(parent.id))children.set(parent.id,[]);children.get(parent.id).push(n);
+      }}
+      const roots=ns.filter(n=>!n.parentId||!ns.some(a=>a.id===n.parentId));
+      const place=(n,point,depth)=>{
         nodes.set(n.id,this.makeItem({key:n.id,title:n.title,type:'node',point,
-          color:groups[group].color,action:()=>this.onNode(n.id)}));
+          color:groups[group].color,childCount:(children.get(n.id)||[]).length,depth,action:()=>this.onNode(n.id)}));
+        const kids=children.get(n.id)||[];
+        kids.forEach((child,i)=>{
+          const angle=i*GOLDEN_ANGLE+depth*1.7+.4;
+          const radius=depth===0?2.2+Math.sqrt(i)*.5:1.45+Math.sqrt(i)*.34;
+          const offset=[Math.cos(angle)*radius,Math.sin(angle)*radius*.85,
+            (i%2?1:-1)*(depth===0?2.3:1.5)+Math.sin(angle)*.6];
+          place(child,[point[0]+offset[0],point[1]+offset[1],point[2]+offset[2]],depth+1);
+        });
+      };
+      roots.forEach((n,i)=>{
+        const angle=i*GOLDEN_ANGLE+gi*.65;const radius=roots.length===1?.5:2.3+Math.sqrt(i)*1.9;
+        const point=[base+Math.cos(angle)*radius*.75,Math.sin(angle)*radius,
+          Math.sin(angle*1.35+gi*.85)*3.3+(i%2?.75:-.75)];
+        place(n,point,0);
       });
+      // Parent links show containment. Semantic connections are drawn separately below.
+      for(const n of ns)if(n.parentId&&nodes.has(n.parentId)&&nodes.has(n.id)){
+        this.makeLink(nodes.get(n.parentId),nodes.get(n.id),{color:groups[group].color,hierarchy:true,label:'contains'});
+      }
     });
     for(const e of p.atlas.edges){
-      const source=nodes.get(e.source),target=nodes.get(e.target);
-      const from=p.atlas.nodes.find(n=>n.id===e.source);
+      const source=nodes.get(e.source),target=nodes.get(e.target),from=all.get(e.source);
       this.makeLink(source,target,{color:groups[from?.group]?.color||'#9288e5'});
     }
     const bridges=bridgeConnections(this.workspace,p.id);
     bridges.forEach((l,i)=>{
       const out=l.source.projectId===p.id,local=out?l.source:l.target,remote=out?l.target:l.source;
+      const localItem=nodes.get(local.nodeId);if(!localItem)return;
       const {project,entry}=resolveEndpoint(this.workspace,remote);
-      const side=i%2===0?-1:1;const point=[side*(14.2+Math.floor(i/8)*2),4.6-Math.floor(i/2)*3.4,
+      const side=i%2===0?-1:1;const point=[side*(this.scopeId?8.8:14.2+Math.floor(i/8)*2),4.6-Math.floor(i/2)*3.4,
         -1.4+Math.sin(i*2.1)*2.1];
       const portal=this.makeItem({key:'portal:'+l.id,title:project.title,type:'portal',point,
         color:'#c7e879',linkId:l.id,action:()=>this.onBridge(l.id,p.id)});
       portal.button.setAttribute('aria-label','Follow '+l.label+' to '+project.title+' / '+entry.title);
       portal.localId=local.nodeId;
-      const localItem=nodes.get(local.nodeId);
       this.makeLink(out?localItem:portal,out?portal:localItem,{color:'#c7e879',
         proposed:l.status==='proposed',bridge:l,external:true});
     });
@@ -297,7 +320,7 @@ export class UniverseMap {
     this.selected=id;
     const visible=new Set(visibleIds||this.items.filter(i=>i.type==='node').map(i=>i.key));
     const p=this.workspace.projects.find(p=>p.id===this.projectId);
-    const related=new Set(id&&p?p.atlas.edges.filter(e=>e.source===id||e.target===id).flatMap(e=>[e.source,e.target]):[]);
+    const related=new Set(id&&p?p.atlas.edges.filter(e=>e.source===id||e.target===id).flatMap(e=>[e.source,e.target]):[]);if(id&&p){const n=p.atlas.nodes.find(n=>n.id===id);if(n?.parentId)related.add(n.parentId);for(const child of p.atlas.nodes.filter(n=>n.parentId===id))related.add(child.id);}
     for(const item of this.items){
       item.visible=item.type==='node'?visible.has(item.key):item.type==='portal'?visible.has(item.localId):true;
       item.button.hidden=!item.visible;item.button.classList.toggle('active',item.key===id);
@@ -312,8 +335,8 @@ export class UniverseMap {
     for(const l of this.links){
       const visible=l.source.visible&&l.target.visible;
       const active=!id||l.source.key===id||l.target.key===id;
-      if(l.line){l.line.visible=visible;l.line.material.opacity=active?.43:.06;}
-      if(l.tube){l.tube.visible=visible;l.tube.material.opacity=active?.16:.025;}
+      if(l.line){l.line.visible=visible;l.line.material.opacity=active?(l.hierarchy?.72:.43):.06;}
+      if(l.tube){l.tube.visible=visible;l.tube.material.opacity=active?(l.hierarchy?.32:.16):.025;}
       if(l.arrow)l.arrow.visible=visible&&active;
       if(l.pulse)l.pulse.visible=visible&&active;
     }
@@ -375,8 +398,8 @@ export class UniverseMap {
   }
   recenter(animate=true){
     if(!this.T)return;
-    const spanX=Math.max(12,...this.items.map(i=>Math.abs(i.point[0])+2));
-    const spanY=Math.max(8,...this.items.map(i=>Math.abs(i.point[1])+3));
+    const activeItems=this.items.filter(i=>i.visible);const spanX=Math.max(this.scopeId?6:12,...activeItems.map(i=>Math.abs(i.point[0])+2));
+    const spanY=Math.max(this.scopeId?5:8,...activeItems.map(i=>Math.abs(i.point[1])+3));
     const vertical=spanY/Math.tan(this.camera.fov*Math.PI/360),horizontal=spanX/(Math.tan(this.camera.fov*Math.PI/360)*this.camera.aspect);
     const distance=Math.min(108,Math.max(vertical,horizontal)*1.04+7);
     this.moveTo({x:0,y:1.2,z:distance,tx:0,ty:0,tz:0},animate);

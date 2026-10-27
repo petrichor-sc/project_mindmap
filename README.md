@@ -1,3 +1,15 @@
+# Project Mind Map — v3.0 · IP11 Session 3 + Spatial Hierarchy
+
+**Quick start**: Run `python3 serve.py` on Linux/macOS or double-click `Start-Project-Mind-Map.bat` on Windows; open `http://localhost:8000/`. This includes Three.js and GSAP locally; internet is not required for the app itself.
+
+**New**: Expand/collapse topic hierarchy, double-click branch nodes (or use **Dive**) to focus, follow breadcrumb paths and jump straight to IP11 reviews, teams, work-package planning or the next session. IP11 now contains documented Session 3 (21 Oct 2026) outcomes and Session 4 (28 Oct 2026, 16:00, PC Pool 5, Room 02 02 105) plans, leadership, team reviews, presentation status, and work-package placeholders. Animated visual effects respect your Motion toggle and reduced-motion preferences.
+
+**Preserves browser work**: Existing workspaces from v2 are upgraded in-place when compatible. Known new Session 3 details are added only if entries do not already exist, and existing notes and edited entries are not overwritten. **Export your workspace before switching**, and use Import to move data across browser origins or ports.
+
+**Known limitations**: Team 3/4 specializations, membership, detailed review findings, work-package assignments and detailed technical dependencies are not confirmed in the notes provided. The UI marks these clearly. This is a static app: data live in the browser; there is no shared server or automatic Moodle sync.
+
+---
+
 # Project Mind Map · Constellation Edition
 
 A standalone, interactive Three.js knowledge universe. **Version 2.0.0 / build 20261027-01.**
